@@ -12,7 +12,7 @@ const post = {
     //   err.status = "fail";
     //   return next(err);
     // }
-    const [rows, fields] = await db.query("select * from posts limitt 1000");
+    const [rows, fields] = await db.query("select text from posts limit 1000");
     res.json({
       data: rows,
     });
