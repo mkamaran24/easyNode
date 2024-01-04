@@ -11,6 +11,7 @@ const express = require("express");
     |--------------------------------------------------------------------------
 */
 const post_router = require("./routes/post.router");
+const user_route = require("./routes/user.route");
 const auth_router = require("./routes/auth.router");
 
 /*
@@ -36,6 +37,7 @@ app.use(express.json());
     |--------------------------------------------------------------------------
 */
 app.use("/api/posts", post_router);
+app.use("/api/users", user_route);
 app.use("/api/v1/auth", auth_router);
 
 /*
