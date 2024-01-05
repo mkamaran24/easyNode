@@ -2,16 +2,15 @@ const db = require("../../config/db");
 const { validationResult } = require("express-validator");
 const ExceptionHandler = require("../../config/exceptions/operational_handler");
 const async_exception_handler = require("../../config/exceptions/non_operational_handler");
+const user_collection = require("../resources/user.res");
 
 const user = {
   index: async_exception_handler(async (req, res, next) => {
     const [rows, fields] = await db.query(
-      "select users.ID,users.name,users.password, posts.ID, posts.text from users INNER JOIN posts ON users.ID = posts.user_id"
+      "select users.ID as userID,users.name,users.password, posts.ID as postID, posts.text from users INNER JOIN posts ON users.ID = posts.user_id"
     );
 
-    res.json({
-      data: rows,
-    });
+    user_collection(rows, res);
   }),
   show: async_exception_handler(async (req, res, next) => {}),
   save: async_exception_handler(async (req, res) => {}),
