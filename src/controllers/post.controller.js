@@ -5,16 +5,20 @@ const async_exception_handler = require("../../config/exceptions/non_operational
 
 const post = {
   index: async_exception_handler(async (req, res, next) => {
-    // data = true;
-    // if (data) {
-    //   const err = new ExceptionHandler("data not found");
-    //   err.statusCode = 404;
-    //   err.status = "fail";
-    //   return next(err);
-    // }
-    const [rows, fields] = await db.query(
-      "select ID,text,comment,images from posts limit 5"
-    );
+    const sql = `select posts.ID as postID,
+    posts.text,
+    posts.comment,
+    posts.images,
+    posts.user_id,
+    users.name,users.ID as userID,
+    comments.ID as commentID,
+    comments.text,
+    comments.post_id
+    from posts 
+    INNER JOIN users ON users.ID = posts.user_id
+    LEFT JOIN comments ON posts.ID = comments.post_id`;
+
+    const [rows, fields] = await db.query(sql);
     console.log(typeof rows);
     res.json({
       data: rows,
