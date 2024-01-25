@@ -5,21 +5,22 @@ const async_exception_handler = require("../../config/exceptions/non_operational
 
 const post = {
   index: async_exception_handler(async (req, res, next) => {
-    const sql = `select posts.ID as postID,
+    const sql = `SELECT
+    posts.ID AS postID,
     posts.text,
     posts.comment,
     posts.images,
     posts.user_id,
-    users.name,users.ID as userID,
-    comments.ID as commentID,
-    comments.text,
-    comments.post_id
-    from posts 
-    INNER JOIN users ON users.ID = posts.user_id
-    LEFT JOIN comments ON posts.ID = comments.post_id`;
+    users.name,
+    users.ID AS userID
+FROM
+    posts
+INNER JOIN
+    users ON users.ID = posts.user_id;
+`;
 
     const [rows, fields] = await db.query(sql);
-    console.log(typeof rows);
+    console.log("DB.END");
     res.json({
       data: rows,
     });
@@ -30,15 +31,8 @@ const post = {
       id,
     ]);
 
-    if (Object.keys(rows).length == 0) {
-      const error = new ExceptionHandler(
-        "posts with that ID is not found!",
-        404
-      );
+    db.end();
 
-      console.log(error);
-      return next(error);
-    }
     res.json({
       data: rows,
     });

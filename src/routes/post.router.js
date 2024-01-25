@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+
 //post Contoller object
 const post_controller = require("../controllers/post.controller");
 //post validation Middlware
