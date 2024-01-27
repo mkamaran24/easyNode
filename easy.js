@@ -4,6 +4,7 @@ const process = require("process");
 var fs = require("fs");
 const mysql = require("mysql2/promise");
 const chalk = require("chalk");
+const figlet = require("figlet");
 
 const folderPath = "src/database/migration";
 
@@ -41,7 +42,12 @@ if (process.argv[2] == "make") {
 )`,
       function (err) {
         if (err) throw err;
-        console.log("Saved!");
+        console.log(" ");
+        console.log(
+          chalk.green("Created Migration: ") +
+            `${currentDate}_${table_name}_create_table.sql`
+        );
+        console.log(" ");
       }
     );
   } else if (process.argv[3] == "controller") {
@@ -143,4 +149,110 @@ if (process.argv[2] == "make") {
   // end of Read the contents of the folder ////
   //////
   // end of migrate process
+} else if (process.argv[2] == "--help" || process.argv[2] == "-h") {
+  console.log(" ");
+
+  const bannerText = "SkySoft";
+
+  const figletOptions = {
+    font: "univers",
+    letterSpacing: 1,
+  };
+
+  // figlet.fonts(function (err, fonts) {
+  //   if (err) {
+  //     console.log("Error fetching fonts...");
+  //     console.dir(err);
+  //     return;
+  //   }
+
+  //   console.log("Available fonts:");
+  //   console.log(fonts);
+  // });
+
+  figlet(bannerText, figletOptions, function (err, data) {
+    if (err) {
+      console.log("Something went wrong...");
+      console.dir(err);
+      return;
+    }
+    console.log(chalk.bold.blue(data));
+    console.log(" ");
+    console.log("Easy CLI " + chalk.green("1.0.0"));
+    console.log(" ");
+    console.log(chalk.yellow("Options: "));
+    console.log(
+      chalk.green("-h, --help ") + "         Display help for the given command"
+    );
+    console.log(
+      chalk.green("-v, --version ") +
+        "      Display Express application version"
+    );
+    console.log(
+      chalk.green("-l, --list ") +
+        "         List all routes for this application"
+    );
+    console.log(" ");
+    console.log(chalk.yellow("Available commands: "));
+    console.log(
+      chalk.green("route -l ") + "           List all registered routes"
+    );
+    console.log(
+      chalk.green("migrate ") +
+        "            Migrating all migration fiels to DB"
+    );
+    console.log(
+      chalk.green("migrate status") + "      Show the status of each migration"
+    );
+    console.log(
+      chalk.green("make migration ") +
+        "     Creating new migartoin files (.sql)"
+    );
+    console.log(
+      chalk.green("make controller ") + "    Create a new controller script"
+    );
+  });
 }
+
+/*
+univers
+poison
+roman
+
+
+'1Row',           '3-D',           '3D Diagonal',
+  '3D-ASCII',       '3x5',           '4Max',
+  '5 Line Oblique', 'Acrobatic',     'Alligator',
+  'Alligator2',     'Alpha',         'Alphabet',
+  'AMC 3 Line',     'AMC 3 Liv1',    'AMC AAA01',
+  'AMC Neko',       'AMC Razor',     'AMC Razor2',
+  'AMC Slash',      'AMC Slider',    'AMC Thin',
+  'AMC Tubes',      'AMC Untitled',  'ANSI Regular',
+  'ANSI Shadow',    'Arrows',        'ASCII New Roman',
+  'Avatar',         'B1FF',          'Banner',
+  'Banner3-D',      'Banner3',       'Banner4',
+  'Barbwire',       'Basic',         'Bear',
+  'Bell',           'Benjamin',      'Big Chief',
+  'Big Money-ne',   'Big Money-nw',  'Big Money-se',
+  'Big Money-sw',   'Big',           'Bigfig',
+  'Binary',         'Block',         'Blocks',
+  'Bloody',         'Bolger',        'Braced',
+  'Bright',         'Broadway KB',   'Broadway',
+  'Bubble',         'Bulbhead',      'Caligraphy',
+  'Caligraphy2',    'Calvin S',      'Cards',
+  'Catwalk',        'Chiseled',      'Chunky',
+  'Coinstak',       'Cola',          'Colossal',
+  'Computer',       'Contessa',      'Contrast',
+  'Cosmike',        'Crawford',      'Crawford2',
+  'Crazy',          'Cricket',       'Cursive',
+  'Cyberlarge',     'Cybermedium',   'Cybersmall',
+  'Cygnet',         'DANC4',         'Dancing Font',
+  'Decimal',        'Def Leppard',   'Delta Corps Priest 1',
+  'Diamond',        'Diet Cola',     'Digital',
+  'Doh',            'Doom',          'DOS Rebel',
+  'Dot Matrix',     'Double Shorts', 'Double',
+  'Dr Pepper',      'DWhistled',     'Efti Chess',
+  'Efti Font',      'Efti Italic',   'Efti Piti',
+  'Efti Robot',
+
+*/
