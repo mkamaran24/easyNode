@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS subcategory (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255)
+)
