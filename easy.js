@@ -10,15 +10,32 @@ const folderPath = "src/database/migration";
 
 const table_check = `SELECT COUNT(*) 
 FROM information_schema.tables
-WHERE table_schema = 'test' 
-    AND table_name = 'category';`;
+WHERE table_schema = 'node' 
+    AND table_name = 'migration';`;
 
-const category_table = `
-  CREATE TABLE IF NOT EXISTS category (
+const migration_table = `
+  CREATE TABLE IF NOT EXISTS migration (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255)
   )
 `;
+
+const dbConfig = {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DBNAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+};
+
+let flag;
+
+function path_exist(fpath, rows) {
+  const exists = rows.some((row) => row.name === fpath);
+  return exists;
+}
 
 if (process.argv[2] == "make") {
   if (process.argv[3] == "migration") {
@@ -55,30 +72,48 @@ if (process.argv[2] == "make") {
   }
 } else if (process.argv[2] == "migrate") {
   if (process.argv[3] == "status") {
-    console.log("There is no migrate process !!");
+    async function is_mig() {
+      // Create a connection pool
+      const pool = mysql.createPool(dbConfig);
+      try {
+        const connection = await pool.getConnection();
+        try {
+          const [results, fields] = await connection.execute(table_check);
+          if (results[0]["COUNT(*)"] != 0) {
+            console.log("Not Zero");
+          } else {
+            console.log(" ");
+            console.log(chalk.bgRed("WARNING: there is no migration table!!"));
+            console.log(" ");
+          }
+        } catch (error) {
+          console.error(`Error executing query: \n`, error);
+        }
+      } catch (connectionErr) {
+        console.error(
+          `Error establishing database connection:: \n`,
+          connectionErr
+        );
+      } finally {
+        if (pool && pool.end) {
+          pool.end();
+        }
+      }
+    }
+    is_mig();
     return; // this is just for stoping excution of code
   }
   // migrate process //////////////////
-  const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DBNAME,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  };
+
   // Read the contents of the folder ////////////
   fs.readdir(folderPath, async (err, filePaths) => {
+    // Create a connection pool
+    const pool = mysql.createPool(dbConfig);
     if (err) {
       console.error("Error reading folder:", err);
       return;
     }
-
-    // Read the contents of each file asynchronously
     const fileContentsArray = [];
-
-    // Function to read the contents of a file
     async function readFileAsync(filePath) {
       return new Promise((resolve, reject) => {
         fs.readFile(filePath, "utf8", (err, data) => {
@@ -90,28 +125,72 @@ if (process.argv[2] == "make") {
         });
       });
     }
-
-    // Function to read files and push content into the array
     async function readFiles() {
-      for (const filePath of filePaths) {
-        try {
-          const fileContent = await readFileAsync(
-            `src/database/migration/${filePath}`
-          );
-          fileContentsArray.push(fileContent);
-        } catch (err) {
-          console.error(`Error reading file ${filePath}:`, err);
-        }
-      }
-
-      // Now 'fileContentsArray' contains the contents of each file
-
-      // Create a connection pool
-      const pool = mysql.createPool(dbConfig);
-
       try {
         // Get a connection from the pool
         const connection = await pool.getConnection();
+
+        const [results, fields] = await connection.execute(table_check);
+        if (results[0]["COUNT(*)"] != 0) {
+          // if migration table exist
+
+          const [rows, fields] = await connection.query(
+            "select name from migration"
+          );
+
+          // console.log(rows);
+          for (const filePath of filePaths) {
+            try {
+              // console.log(path_exist(filePath, rows));
+              if (path_exist(filePath, rows)) {
+                flag = true;
+                continue;
+              } else {
+                flag = false;
+                const insert = "insert into migration (name) values (?)";
+                const { rows, fields } = await connection.query(insert, [
+                  filePath,
+                ]);
+                const fileContent = await readFileAsync(
+                  `src/database/migration/${filePath}`
+                );
+                fileContentsArray.push(fileContent);
+              }
+            } catch (err) {
+              console.error(`Error reading file ${filePath}:`, err);
+            }
+          }
+
+          // flag for terminating script
+          if (flag) {
+            console.log(" ");
+            console.log(chalk.bgMagenta("All migartions are running !!"));
+            console.log(" ");
+            return;
+          }
+          // end of termination
+        } else {
+          const [results, fields] = await connection.query(migration_table);
+          console.log(" ");
+          console.log(chalk.bgMagenta("Creating Migration Process..."));
+
+          for (const filePath of filePaths) {
+            try {
+              const insert = "insert into migration (name) values (?)";
+              const { rows, fields } = await connection.query(insert, [
+                filePath,
+              ]);
+              const fileContent = await readFileAsync(
+                `src/database/migration/${filePath}`
+              );
+              fileContentsArray.push(fileContent);
+            } catch (err) {
+              console.error(`Error reading file ${filePath}:`, err);
+            }
+          }
+        } // if migration table not exist
+
+        // Now 'fileContentsArray' contains the contents of each file
 
         console.log(" ");
         console.log("===========================");
@@ -134,7 +213,7 @@ if (process.argv[2] == "make") {
           }
         }
       } catch (connectionErr) {
-        console.error("Error establishing database connection:", connectionErr);
+        console.error(chalk.bgRed("Error establishing database connection:"));
       } finally {
         // Release the connection back to the pool
         if (pool && pool.end) {
@@ -142,8 +221,6 @@ if (process.argv[2] == "make") {
         }
       }
     }
-
-    // Call the function to read files
     readFiles();
   });
   // end of Read the contents of the folder ////
@@ -152,7 +229,7 @@ if (process.argv[2] == "make") {
 } else if (process.argv[2] == "--help" || process.argv[2] == "-h") {
   console.log(" ");
 
-  const bannerText = "SkySoft";
+  const bannerText = " EasyCLi";
 
   const figletOptions = {
     font: "univers",
@@ -176,9 +253,10 @@ if (process.argv[2] == "make") {
       console.dir(err);
       return;
     }
-    console.log(chalk.bold.blue(data));
+    console.log(chalk.blue(data));
     console.log(" ");
-    console.log("Easy CLI " + chalk.green("1.0.0"));
+    console.log(" Easy CLI " + chalk.green("1.0.0"));
+    console.log(" Powred BY: " + chalk.green(" Mohammed Kamaran"));
     console.log(" ");
     console.log(chalk.yellow("Options: "));
     console.log(
@@ -218,41 +296,4 @@ if (process.argv[2] == "make") {
 univers
 poison
 roman
-
-
-'1Row',           '3-D',           '3D Diagonal',
-  '3D-ASCII',       '3x5',           '4Max',
-  '5 Line Oblique', 'Acrobatic',     'Alligator',
-  'Alligator2',     'Alpha',         'Alphabet',
-  'AMC 3 Line',     'AMC 3 Liv1',    'AMC AAA01',
-  'AMC Neko',       'AMC Razor',     'AMC Razor2',
-  'AMC Slash',      'AMC Slider',    'AMC Thin',
-  'AMC Tubes',      'AMC Untitled',  'ANSI Regular',
-  'ANSI Shadow',    'Arrows',        'ASCII New Roman',
-  'Avatar',         'B1FF',          'Banner',
-  'Banner3-D',      'Banner3',       'Banner4',
-  'Barbwire',       'Basic',         'Bear',
-  'Bell',           'Benjamin',      'Big Chief',
-  'Big Money-ne',   'Big Money-nw',  'Big Money-se',
-  'Big Money-sw',   'Big',           'Bigfig',
-  'Binary',         'Block',         'Blocks',
-  'Bloody',         'Bolger',        'Braced',
-  'Bright',         'Broadway KB',   'Broadway',
-  'Bubble',         'Bulbhead',      'Caligraphy',
-  'Caligraphy2',    'Calvin S',      'Cards',
-  'Catwalk',        'Chiseled',      'Chunky',
-  'Coinstak',       'Cola',          'Colossal',
-  'Computer',       'Contessa',      'Contrast',
-  'Cosmike',        'Crawford',      'Crawford2',
-  'Crazy',          'Cricket',       'Cursive',
-  'Cyberlarge',     'Cybermedium',   'Cybersmall',
-  'Cygnet',         'DANC4',         'Dancing Font',
-  'Decimal',        'Def Leppard',   'Delta Corps Priest 1',
-  'Diamond',        'Diet Cola',     'Digital',
-  'Doh',            'Doom',          'DOS Rebel',
-  'Dot Matrix',     'Double Shorts', 'Double',
-  'Dr Pepper',      'DWhistled',     'Efti Chess',
-  'Efti Font',      'Efti Italic',   'Efti Piti',
-  'Efti Robot',
-
 */
