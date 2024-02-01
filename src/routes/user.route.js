@@ -14,3 +14,5 @@ router.get("/", user_controller.index);
 // router.delete("/:id", post_controller.destroy);
 
 module.exports = router;
+
+// test routes
