@@ -85,6 +85,9 @@ INNER JOIN
       console.log(error);
     }
   },
+  get_protocol: async(req,res){
+    console.log("test_params");
+  }
 };
 
 module.exports = post;
